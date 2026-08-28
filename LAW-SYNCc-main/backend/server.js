@@ -1,0 +1,83 @@
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const connectDB = require('./config/db');
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+
+// Load environment variables
+dotenv.config();
+
+// Initialize MongoDB Connection
+connectDB();
+
+// Initialize Express App
+const app = express();
+
+// Middlewares
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || '*',
+    credentials: true
+  })
+);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// API Root / Health Check
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'online',
+    timestamp: new Date(),
+    service: 'Legal Dictionary API'
+  });
+});
+
+// Import Route Handlers
+const authRoutes = require('./routes/authRoutes');
+const termRoutes = require('./routes/termRoutes');
+const bookmarkRoutes = require('./routes/bookmarkRoutes');
+const historyRoutes = require('./routes/historyRoutes');
+const quizRoutes = require('./routes/quizRoutes');
+const userRoutes = require('./routes/userRoutes');
+
+// Mount API Endpoints
+app.use('/api/auth', authRoutes);
+app.use('/api/terms', termRoutes);
+app.use('/api/bookmarks', bookmarkRoutes);
+app.use('/api/history', historyRoutes);
+app.use('/api/quiz', quizRoutes);
+app.use('/api/quizzes', quizRoutes); // alias support
+app.use('/api/profile', userRoutes);
+app.use('/api/users', userRoutes); // alias support
+
+// Fallback route for base API path
+app.get('/api', (req, res) => {
+  res.json({
+    message: 'Welcome to the Legal Dictionary REST API',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      terms: '/api/terms',
+      bookmarks: '/api/bookmarks',
+      history: '/api/history',
+      quiz: '/api/quiz',
+      profile: '/api/profile'
+    }
+  });
+});
+
+// Error Middlewares
+app.use(notFound);
+app.use(errorHandler);
+
+// Start Server
+const PORT = process.env.PORT || 5000;
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Legal Dictionary Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error(`Unhandled Rejection Error: ${err.message}`);
+  server.close(() => process.exit(1));
+});
