@@ -1,11 +1,14 @@
-const Quiz = require('../models/Quiz');
+const { Op } = require('sequelize');
+const { Quiz } = require('../models');
 
 // @desc    Get all quiz questions
 // @route   GET /api/quiz or GET /api/quizzes
 // @access  Public
 const getQuizzes = async (req, res, next) => {
   try {
-    const questions = await Quiz.find().sort({ createdAt: 1 });
+    const questions = await Quiz.findAll({
+      order: [['id', 'ASC']]
+    });
 
     res.status(200).json({
       success: true,
@@ -22,7 +25,7 @@ const getQuizzes = async (req, res, next) => {
 // @access  Public (or Private)
 const attemptQuiz = async (req, res, next) => {
   try {
-    const { answers } = req.body; // Expects an array: [{ questionId: string, selectedOption: number }]
+    const { answers } = req.body; // Expects an array: [{ questionId: number|string, selectedOption: number }]
 
     if (!answers || !Array.isArray(answers) || answers.length === 0) {
       return res.status(400).json({
@@ -31,15 +34,22 @@ const attemptQuiz = async (req, res, next) => {
       });
     }
 
-    const questionIds = answers.map((a) => a.questionId);
-    const questions = await Quiz.find({ _id: { $in: questionIds } });
+    const questionIds = answers.map((a) => parseInt(a.questionId, 10)).filter((id) => !isNaN(id));
+    const questions = await Quiz.findAll({
+      where: {
+        id: {
+          [Op.in]: questionIds
+        }
+      }
+    });
 
     const questionMap = new Map();
-    questions.forEach((q) => questionMap.set(q._id.toString(), q));
+    questions.forEach((q) => questionMap.set(q.id, q));
 
     let score = 0;
     const results = answers.map((ans) => {
-      const q = questionMap.get(ans.questionId.toString());
+      const qId = parseInt(ans.questionId, 10);
+      const q = questionMap.get(qId);
       if (!q) {
         return {
           questionId: ans.questionId,
@@ -51,7 +61,7 @@ const attemptQuiz = async (req, res, next) => {
       if (isCorrect) score += 1;
 
       return {
-        questionId: q._id,
+        questionId: q.id,
         question: q.question,
         selectedOption: ans.selectedOption,
         correctAnswer: q.correctAnswer,
@@ -86,7 +96,7 @@ const createQuiz = async (req, res, next) => {
     if (!question || !options || correctAnswer === undefined || !explanation) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide question, options, correctAnswer (0-indexed index), and explanation'
+        message: 'Please provide question, options (array), correctAnswer (0-indexed index), and explanation'
       });
     }
 
@@ -112,7 +122,7 @@ const createQuiz = async (req, res, next) => {
 // @access  Private/Admin
 const deleteQuiz = async (req, res, next) => {
   try {
-    const quiz = await Quiz.findById(req.params.id);
+    const quiz = await Quiz.findByPk(req.params.id);
 
     if (!quiz) {
       return res.status(404).json({
@@ -121,7 +131,7 @@ const deleteQuiz = async (req, res, next) => {
       });
     }
 
-    await quiz.deleteOne();
+    await quiz.destroy();
 
     res.status(200).json({
       success: true,

@@ -1,84 +1,94 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const termSchema = new mongoose.Schema(
+const Term = sequelize.define(
+  'Term',
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true
+    },
     word: {
-      type: String,
-      required: [true, 'Please provide the legal term word'],
+      type: DataTypes.STRING,
+      allowNull: false,
       unique: true,
-      trim: true,
-      index: true
+      validate: {
+        notEmpty: { msg: 'Please provide the legal term word' }
+      }
     },
     pronunciation: {
-      type: String,
-      trim: true,
-      default: ''
+      type: DataTypes.STRING,
+      defaultValue: ''
     },
     category: {
-      type: String,
-      required: [true, 'Please provide a category for the term'],
-      trim: true,
-      index: true
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Please provide a category for the term' }
+      }
     },
     categoryId: {
-      type: String,
-      trim: true,
-      lowercase: true,
-      default: function () {
-        return this.category ? this.category.toLowerCase().replace(/[^a-z0-9]/g, '') : 'general';
+      type: DataTypes.STRING,
+      defaultValue: function () {
+        return this.category
+          ? this.category.toLowerCase().replace(/[^a-z0-9]/g, '')
+          : 'general';
       }
     },
     definition: {
-      type: String,
-      required: [true, 'Please provide a formal legal definition'],
-      trim: true
+      type: DataTypes.TEXT,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Please provide a formal legal definition' }
+      }
     },
     simpleMeaning: {
-      type: String,
-      required: [true, 'Please provide a simplified plain-English meaning'],
-      trim: true
+      type: DataTypes.TEXT,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Please provide a simplified plain-English meaning' }
+      }
     },
     example: {
-      type: String,
-      required: [true, 'Please provide a practical example or scenario'],
-      trim: true
+      type: DataTypes.TEXT,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Please provide a practical example' }
+      }
     },
     relatedLaws: {
-      type: String,
-      trim: true,
-      default: ''
+      type: DataTypes.TEXT,
+      defaultValue: ''
     },
     relatedTerms: {
-      type: [String],
-      default: []
+      type: DataTypes.JSONB,
+      defaultValue: []
     },
     keyElements: {
-      type: [String],
-      default: []
+      type: DataTypes.JSONB,
+      defaultValue: []
     },
     isPopular: {
-      type: Boolean,
-      default: false,
-      index: true
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     },
     isTermOfDay: {
-      type: Boolean,
-      default: false,
-      index: true
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     }
   },
   {
-    timestamps: true
+    tableName: 'terms',
+    timestamps: true,
+    indexes: [
+      { fields: ['word'] },
+      { fields: ['category'] },
+      { fields: ['categoryId'] },
+      { fields: ['isPopular'] },
+      { fields: ['isTermOfDay'] }
+    ]
   }
 );
 
-// Text Index for full-text searching across word, definition, simpleMeaning, and category
-termSchema.index({
-  word: 'text',
-  simpleMeaning: 'text',
-  definition: 'text',
-  category: 'text',
-  relatedLaws: 'text'
-});
-
-module.exports = mongoose.model('Term', termSchema);
+module.exports = Term;

@@ -1,36 +1,51 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const quizSchema = new mongoose.Schema(
+const Quiz = sequelize.define(
+  'Quiz',
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true
+    },
     question: {
-      type: String,
-      required: [true, 'Please provide the quiz question'],
-      trim: true
+      type: DataTypes.TEXT,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Please provide the quiz question' }
+      }
     },
     options: {
-      type: [String],
-      required: [true, 'Please provide answer options'],
+      type: DataTypes.JSONB,
+      allowNull: false,
       validate: {
-        validator: function (val) {
-          return val && val.length >= 2;
-        },
-        message: 'A quiz question must have at least 2 options'
+        isValidOptions(val) {
+          if (!Array.isArray(val) || val.length < 2) {
+            throw new Error('A quiz question must have at least 2 options');
+          }
+        }
       }
     },
     correctAnswer: {
-      type: Number,
-      required: [true, 'Please provide the index of the correct answer (0-indexed)'],
-      min: 0
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      validate: {
+        min: 0
+      }
     },
     explanation: {
-      type: String,
-      required: [true, 'Please provide an explanation for the answer'],
-      trim: true
+      type: DataTypes.TEXT,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Please provide an explanation' }
+      }
     }
   },
   {
+    tableName: 'quizzes',
     timestamps: true
   }
 );
 
-module.exports = mongoose.model('Quiz', quizSchema);
+module.exports = Quiz;

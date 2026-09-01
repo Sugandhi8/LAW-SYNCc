@@ -1,13 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const connectDB = require('./config/db');
-const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 // Load environment variables
 dotenv.config();
 
-// Initialize MongoDB Connection
+// Load Models and Associations
+require('./models');
+
+// Initialize PostgreSQL Database Connection
+const { connectDB } = require('./config/db');
 connectDB();
 
 // Initialize Express App
@@ -28,6 +30,7 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'online',
     timestamp: new Date(),
+    database: 'PostgreSQL',
     service: 'Legal Dictionary API'
   });
 });
@@ -53,7 +56,7 @@ app.use('/api/users', userRoutes); // alias support
 // Fallback route for base API path
 app.get('/api', (req, res) => {
   res.json({
-    message: 'Welcome to the Legal Dictionary REST API',
+    message: 'Welcome to the Legal Dictionary REST API (PostgreSQL)',
     version: '1.0.0',
     endpoints: {
       auth: '/api/auth',
@@ -67,6 +70,7 @@ app.get('/api', (req, res) => {
 });
 
 // Error Middlewares
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 app.use(notFound);
 app.use(errorHandler);
 

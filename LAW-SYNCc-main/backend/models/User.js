@@ -1,55 +1,65 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const { sequelize } = require('../config/db');
 
-const userSchema = new mongoose.Schema(
+const User = sequelize.define(
+  'User',
   {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true
+    },
     name: {
-      type: String,
-      required: [true, 'Please provide a name'],
-      trim: true,
-      maxlength: [50, 'Name cannot exceed 50 characters']
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: 'Please provide a name' }
+      }
     },
     email: {
-      type: String,
-      required: [true, 'Please provide an email address'],
+      type: DataTypes.STRING,
+      allowNull: false,
       unique: true,
-      lowercase: true,
-      trim: true,
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        'Please provide a valid email address'
-      ]
+      validate: {
+        isEmail: { msg: 'Please provide a valid email address' }
+      },
+      set(val) {
+        this.setDataValue('email', val ? val.toLowerCase().trim() : val);
+      }
     },
     password: {
-      type: String,
-      required: [true, 'Please provide a password'],
-      minlength: [6, 'Password must be at least 6 characters long'],
-      select: false // Do not return password by default in queries
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        len: {
+          args: [6, 100],
+          msg: 'Password must be at least 6 characters long'
+        }
+      }
     },
     role: {
-      type: String,
-      enum: ['user', 'admin'],
-      default: 'user'
+      type: DataTypes.ENUM('user', 'admin'),
+      defaultValue: 'user'
     }
   },
   {
-    timestamps: true
+    tableName: 'users',
+    timestamps: true,
+    hooks: {
+      beforeSave: async (user) => {
+        if (user.changed('password')) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
+      }
+    }
   }
 );
 
-// Encrypt password before saving
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    return next();
-  }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-// Compare user entered password with hashed password in database
-userSchema.methods.matchPassword = async function (enteredPassword) {
+// Method to compare entered password with hashed password
+User.prototype.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = User;

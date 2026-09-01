@@ -1,6 +1,6 @@
-const Term = require('../models/Term');
-const Bookmark = require('../models/Bookmark');
-const History = require('../models/History');
+const { Op } = require('sequelize');
+const { Term, History } = require('../models');
+const { sequelize } = require('../config/db');
 
 // @desc    Get all legal terms with optional search, category, letter, and pagination filters
 // @route   GET /api/terms
@@ -18,72 +18,76 @@ const getTerms = async (req, res, next) => {
       sort = 'word'
     } = req.query;
 
-    const query = {};
+    const whereConditions = [];
 
     // Filter by category
     if (category && category !== 'all') {
-      // Matches categoryId or category name case-insensitively
-      query.$or = [
-        { categoryId: category.toLowerCase() },
-        { category: new RegExp(`^${category}$`, 'i') }
-      ];
-    }
-
-    // Filter by starts with letter
-    if (letter) {
-      query.word = new RegExp(`^${letter}`, 'i');
-    }
-
-    // Filter by popular
-    if (popular === 'true') {
-      query.isPopular = true;
-    }
-
-    // Filter by term of the day
-    if (termOfDay === 'true') {
-      query.isTermOfDay = true;
-    }
-
-    // Search query across word, definition, simpleMeaning, category, and relatedLaws
-    if (search && search.trim()) {
-      const searchRegex = new RegExp(search.trim(), 'i');
-      query.$and = query.$and || [];
-      query.$and.push({
-        $or: [
-          { word: searchRegex },
-          { simpleMeaning: searchRegex },
-          { definition: searchRegex },
-          { category: searchRegex },
-          { relatedLaws: searchRegex },
-          { relatedTerms: searchRegex }
+      whereConditions.push({
+        [Op.or]: [
+          { categoryId: category.toLowerCase().trim() },
+          { category: { [Op.iLike]: category.trim() } }
         ]
       });
     }
 
+    // Filter by starts with letter
+    if (letter) {
+      whereConditions.push({
+        word: { [Op.iLike]: `${letter.trim()}%` }
+      });
+    }
+
+    // Filter by popular
+    if (popular === 'true') {
+      whereConditions.push({ isPopular: true });
+    }
+
+    // Filter by term of the day
+    if (termOfDay === 'true') {
+      whereConditions.push({ isTermOfDay: true });
+    }
+
+    // Search query across word, definition, simpleMeaning, category, and relatedLaws
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim()}%`;
+      whereConditions.push({
+        [Op.or]: [
+          { word: { [Op.iLike]: searchTerm } },
+          { simpleMeaning: { [Op.iLike]: searchTerm } },
+          { definition: { [Op.iLike]: searchTerm } },
+          { category: { [Op.iLike]: searchTerm } },
+          { relatedLaws: { [Op.iLike]: searchTerm } }
+        ]
+      });
+    }
+
+    const where = whereConditions.length > 0 ? { [Op.and]: whereConditions } : {};
+
     // Pagination calculations
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 20;
-    const skip = (pageNum - 1) * limitNum;
+    const offset = (pageNum - 1) * limitNum;
 
-    // Sorting
-    let sortOption = { word: 1 };
+    // Sorting options
+    let order = [['word', 'ASC']];
     if (sort === '-createdAt') {
-      sortOption = { createdAt: -1 };
+      order = [['createdAt', 'DESC']];
     } else if (sort === 'popular') {
-      sortOption = { isPopular: -1, word: 1 };
+      order = [['isPopular', 'DESC'], ['word', 'ASC']];
     }
 
-    const total = await Term.countDocuments(query);
-    const terms = await Term.find(query)
-      .sort(sortOption)
-      .skip(skip)
-      .limit(limitNum);
+    const { count, rows: terms } = await Term.findAndCountAll({
+      where,
+      limit: limitNum,
+      offset,
+      order
+    });
 
     res.status(200).json({
       success: true,
       count: terms.length,
-      total,
-      totalPages: Math.ceil(total / limitNum),
+      total: count,
+      totalPages: Math.ceil(count / limitNum),
       currentPage: pageNum,
       data: terms
     });
@@ -100,12 +104,14 @@ const getTermById = async (req, res, next) => {
     const { id } = req.params;
     let term;
 
-    // Check if parameter is a valid MongoDB ObjectId
-    if (id.match(/^[0-9a-fA-F]{24}$/)) {
-      term = await Term.findById(id);
+    // If param is a number, search by primary key
+    if (!isNaN(id)) {
+      term = await Term.findByPk(parseInt(id, 10));
     } else {
       // Otherwise match case-insensitively by word
-      term = await Term.findOne({ word: new RegExp(`^${id}$`, 'i') });
+      term = await Term.findOne({
+        where: { word: { [Op.iLike]: id.trim() } }
+      });
     }
 
     if (!term) {
@@ -118,8 +124,8 @@ const getTermById = async (req, res, next) => {
     // Automatically record search/view history if user is authenticated
     if (req.user) {
       await History.create({
-        user: req.user._id,
-        term: term._id,
+        userId: req.user.id,
+        termId: term.id,
         searchedAt: new Date()
       }).catch(() => {});
     }
@@ -138,11 +144,11 @@ const getTermById = async (req, res, next) => {
 // @access  Public
 const getTermOfTheDay = async (req, res, next) => {
   try {
-    let term = await Term.findOne({ isTermOfDay: true });
+    let term = await Term.findOne({ where: { isTermOfDay: true } });
 
-    // Fallback to a popular term or any random term if none marked
+    // Fallback to a popular term or first available term
     if (!term) {
-      term = await Term.findOne({ isPopular: true }) || await Term.findOne();
+      term = await Term.findOne({ where: { isPopular: true } }) || await Term.findOne();
     }
 
     if (!term) {
@@ -166,37 +172,31 @@ const getTermOfTheDay = async (req, res, next) => {
 // @access  Public
 const getCategories = async (req, res, next) => {
   try {
-    const categoriesAggregation = await Term.aggregate([
-      {
-        $group: {
-          _id: {
-            category: '$category',
-            categoryId: '$categoryId'
-          },
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $project: {
-          _id: 0,
-          name: '$_id.category',
-          id: '$_id.categoryId',
-          count: '$count'
-        }
-      },
-      {
-        $sort: { count: -1 }
-      }
-    ]);
+    const categoriesAggregation = await Term.findAll({
+      attributes: [
+        'category',
+        'categoryId',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+      ],
+      group: ['category', 'categoryId'],
+      order: [[sequelize.fn('COUNT', sequelize.col('id')), 'DESC']],
+      raw: true
+    });
 
-    const totalCount = await Term.countDocuments();
+    const totalCount = await Term.count();
+
+    const formattedCategories = categoriesAggregation.map((c) => ({
+      id: c.categoryId,
+      name: c.category,
+      count: parseInt(c.count, 10)
+    }));
 
     res.status(200).json({
       success: true,
       totalTerms: totalCount,
       data: [
         { id: 'all', name: 'All Categories', count: totalCount },
-        ...categoriesAggregation
+        ...formattedCategories
       ]
     });
   } catch (error) {
@@ -219,10 +219,12 @@ const compareTerms = async (req, res, next) => {
     }
 
     const findTerm = async (identifier) => {
-      if (identifier.match(/^[0-9a-fA-F]{24}$/)) {
-        return await Term.findById(identifier);
+      if (!isNaN(identifier)) {
+        return await Term.findByPk(parseInt(identifier, 10));
       }
-      return await Term.findOne({ word: new RegExp(`^${identifier.trim()}$`, 'i') });
+      return await Term.findOne({
+        where: { word: { [Op.iLike]: identifier.trim() } }
+      });
     };
 
     const [termOneData, termTwoData] = await Promise.all([
@@ -270,7 +272,10 @@ const createTerm = async (req, res, next) => {
     } = req.body;
 
     // Check if term already exists
-    const existing = await Term.findOne({ word: new RegExp(`^${word.trim()}$`, 'i') });
+    const existing = await Term.findOne({
+      where: { word: { [Op.iLike]: word.trim() } }
+    });
+
     if (existing) {
       return res.status(400).json({
         success: false,
@@ -280,14 +285,14 @@ const createTerm = async (req, res, next) => {
 
     // If marked as isTermOfDay, unset any existing term of day
     if (isTermOfDay) {
-      await Term.updateMany({ isTermOfDay: true }, { isTermOfDay: false });
+      await Term.update({ isTermOfDay: false }, { where: { isTermOfDay: true } });
     }
 
     const term = await Term.create({
-      word,
+      word: word.trim(),
       pronunciation,
       category,
-      categoryId,
+      categoryId: categoryId || category.toLowerCase().replace(/[^a-z0-9]/g, ''),
       definition,
       simpleMeaning,
       example,
@@ -313,7 +318,7 @@ const createTerm = async (req, res, next) => {
 // @access  Private/Admin
 const updateTerm = async (req, res, next) => {
   try {
-    let term = await Term.findById(req.params.id);
+    const term = await Term.findByPk(req.params.id);
 
     if (!term) {
       return res.status(404).json({
@@ -324,13 +329,13 @@ const updateTerm = async (req, res, next) => {
 
     // If updating to isTermOfDay, unset existing
     if (req.body.isTermOfDay) {
-      await Term.updateMany({ _id: { $ne: term._id }, isTermOfDay: true }, { isTermOfDay: false });
+      await Term.update(
+        { isTermOfDay: false },
+        { where: { id: { [Op.ne]: term.id }, isTermOfDay: true } }
+      );
     }
 
-    term = await Term.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    });
+    await term.update(req.body);
 
     res.status(200).json({
       success: true,
@@ -347,7 +352,7 @@ const updateTerm = async (req, res, next) => {
 // @access  Private/Admin
 const deleteTerm = async (req, res, next) => {
   try {
-    const term = await Term.findById(req.params.id);
+    const term = await Term.findByPk(req.params.id);
 
     if (!term) {
       return res.status(404).json({
@@ -356,13 +361,7 @@ const deleteTerm = async (req, res, next) => {
       });
     }
 
-    await term.deleteOne();
-
-    // Clean up related bookmarks and history entries
-    await Promise.all([
-      Bookmark.deleteMany({ term: term._id }),
-      History.deleteMany({ term: term._id })
-    ]);
+    await term.destroy();
 
     res.status(200).json({
       success: true,

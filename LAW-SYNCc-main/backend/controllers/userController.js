@@ -1,13 +1,13 @@
-const User = require('../models/User');
-const Bookmark = require('../models/Bookmark');
-const History = require('../models/History');
+const { User, Bookmark, History, Term } = require('../models');
 
 // @desc    Get user profile with stats
 // @route   GET /api/profile or GET /api/users/profile
 // @access  Private
 const getProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] }
+    });
 
     if (!user) {
       return res.status(404).json({
@@ -17,16 +17,26 @@ const getProfile = async (req, res, next) => {
     }
 
     const [bookmarksCount, historyCount, recentBookmarks, recentHistory] = await Promise.all([
-      Bookmark.countDocuments({ user: user._id }),
-      History.countDocuments({ user: user._id }),
-      Bookmark.find({ user: user._id }).populate('term').sort({ createdAt: -1 }).limit(5),
-      History.find({ user: user._id }).populate('term').sort({ searchedAt: -1 }).limit(5)
+      Bookmark.count({ where: { userId: user.id } }),
+      History.count({ where: { userId: user.id } }),
+      Bookmark.findAll({
+        where: { userId: user.id },
+        include: [{ model: Term, as: 'term' }],
+        order: [['createdAt', 'DESC']],
+        limit: 5
+      }),
+      History.findAll({
+        where: { userId: user.id },
+        include: [{ model: Term, as: 'term' }],
+        order: [['searchedAt', 'DESC']],
+        limit: 5
+      })
     ]);
 
     res.status(200).json({
       success: true,
       data: {
-        _id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -49,7 +59,7 @@ const getProfile = async (req, res, next) => {
 // @access  Private
 const updateProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id).select('+password');
+    const user = await User.findByPk(req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -59,14 +69,14 @@ const updateProfile = async (req, res, next) => {
     }
 
     if (req.body.name) {
-      user.name = req.body.name;
+      user.name = req.body.name.trim();
     }
 
     if (req.body.email) {
-      const emailLower = req.body.email.toLowerCase();
+      const emailLower = req.body.email.toLowerCase().trim();
       // Check if new email is taken by someone else
       if (emailLower !== user.email) {
-        const existing = await User.findOne({ email: emailLower });
+        const existing = await User.findOne({ where: { email: emailLower } });
         if (existing) {
           return res.status(400).json({
             success: false,
@@ -84,20 +94,20 @@ const updateProfile = async (req, res, next) => {
           message: 'Password must be at least 6 characters long'
         });
       }
-      user.password = req.body.password; // pre-save hook will hash it
+      user.password = req.body.password; // beforeSave hook will hash it
     }
 
-    const updatedUser = await user.save();
+    await user.save();
 
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
       data: {
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        role: updatedUser.role,
-        updatedAt: updatedUser.updatedAt
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        updatedAt: user.updatedAt
       }
     });
   } catch (error) {

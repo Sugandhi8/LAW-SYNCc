@@ -1,24 +1,24 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 
-const History = sequelize.define(
-  'History',
+const ScenarioTerm = sequelize.define(
+  'ScenarioTerm',
   {
-    id: {
+    scenario_term_id: {
       type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true
     },
-    userId: {
+    scenario_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'users',
-        key: 'id'
+        model: 'legal_scenarios',
+        key: 'scenario_id'
       },
       onDelete: 'CASCADE'
     },
-    termId: {
+    term_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -27,18 +27,22 @@ const History = sequelize.define(
       },
       onDelete: 'CASCADE'
     },
-    searchedAt: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+    relevance: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      defaultValue: 'Primary'
     }
   },
   {
-    tableName: 'histories',
-    timestamps: false,
+    tableName: 'scenario_terms',
+    timestamps: true,
     indexes: [
-      { fields: ['userId', 'searchedAt'] }
+      {
+        unique: true,
+        fields: ['scenario_id', 'term_id']
+      }
     ]
   }
 );
 
-module.exports = History;
+module.exports = ScenarioTerm;

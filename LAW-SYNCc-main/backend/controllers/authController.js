@@ -1,7 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const Bookmark = require('../models/Bookmark');
-const History = require('../models/History');
+const { User, Bookmark, History } = require('../models');
 
 // Helper to generate signed JWT token
 const generateToken = (id) => {
@@ -26,8 +24,10 @@ const register = async (req, res, next) => {
       });
     }
 
+    const emailLower = email.toLowerCase().trim();
+
     // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ where: { email: emailLower } });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -35,22 +35,22 @@ const register = async (req, res, next) => {
       });
     }
 
-    // Create user (role defaults to 'user' unless explicitly provided and valid)
+    // Create user
     const user = await User.create({
       name,
-      email: email.toLowerCase(),
+      email: emailLower,
       password,
       role: role === 'admin' ? 'admin' : 'user'
     });
 
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
 
     res.status(201).json({
       success: true,
       message: 'Account registered successfully',
       token,
       user: {
-        _id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -76,8 +76,10 @@ const login = async (req, res, next) => {
       });
     }
 
-    // Find user by email and explicitly select password
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const emailLower = email.toLowerCase().trim();
+
+    // Find user by email
+    const user = await User.findOne({ where: { email: emailLower } });
 
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({
@@ -86,14 +88,14 @@ const login = async (req, res, next) => {
       });
     }
 
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
 
     res.status(200).json({
       success: true,
       message: 'Login successful',
       token,
       user: {
-        _id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
@@ -110,7 +112,10 @@ const login = async (req, res, next) => {
 // @access  Private
 const getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] }
+    });
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -118,13 +123,13 @@ const getMe = async (req, res, next) => {
       });
     }
 
-    const bookmarksCount = await Bookmark.countDocuments({ user: user._id });
-    const historyCount = await History.countDocuments({ user: user._id });
+    const bookmarksCount = await Bookmark.count({ where: { userId: user.id } });
+    const historyCount = await History.count({ where: { userId: user.id } });
 
     res.status(200).json({
       success: true,
       user: {
-        _id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,

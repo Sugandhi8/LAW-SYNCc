@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { User } = require('../models');
 
 // Protect routes - verifies JWT from Authorization header
 const protect = async (req, res, next) => {
@@ -25,7 +25,9 @@ const protect = async (req, res, next) => {
       process.env.JWT_SECRET || 'lawsync_super_secret_jwt_key_2026_dev'
     );
 
-    req.user = await User.findById(decoded.id).select('-password');
+    req.user = await User.findByPk(decoded.id, {
+      attributes: { exclude: ['password'] }
+    });
 
     if (!req.user) {
       return res.status(401).json({
@@ -60,7 +62,9 @@ const optionalAuth = async (req, res, next) => {
         token,
         process.env.JWT_SECRET || 'lawsync_super_secret_jwt_key_2026_dev'
       );
-      req.user = await User.findById(decoded.id).select('-password');
+      req.user = await User.findByPk(decoded.id, {
+        attributes: { exclude: ['password'] }
+      });
     } catch (error) {
       // Proceed without user on token failure
       req.user = null;

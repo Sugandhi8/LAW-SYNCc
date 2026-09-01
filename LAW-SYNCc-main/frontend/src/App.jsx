@@ -1,244 +1,122 @@
-import { useState, useEffect } from 'react';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import TermDetailsModal from './components/TermDetailsModal';
-import Home from './pages/Home';
-import Dictionary from './pages/Dictionary';
-import Categories from './pages/Categories';
-import Bookmarks from './pages/Bookmarks';
-import History from './pages/History';
-import Compare from './pages/Compare';
-import Quiz from './pages/Quiz';
-import { sampleLegalTerms } from './data/legalTerms';
+import { useState } from 'react'
+import heroImg from './assets/hero.png'
+import reactLogo from './assets/react.svg'
+import viteLogo from './assets/vite.svg'
+import './App.css'
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState('home');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [activeModalTerm, setActiveModalTerm] = useState(null);
-  const [compareTerm1Id, setCompareTerm1Id] = useState(null);
-  const [compareTerm2Id, setCompareTerm2Id] = useState(null);
-
-  // Bookmarks persistence
-  const [bookmarkedIds, setBookmarkedIds] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lawsync_bookmarks');
-      return saved ? JSON.parse(saved) : ['1', '2'];
-    } catch {
-      return ['1', '2'];
-    }
-  });
-
-  // History persistence
-  const [historyItems, setHistoryItems] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lawsync_history');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // Sync Bookmarks to LocalStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('lawsync_bookmarks', JSON.stringify(bookmarkedIds));
-    } catch (e) {
-      console.error("Failed to save bookmarks to localStorage:", e);
-    }
-  }, [bookmarkedIds]);
-
-  // Sync History to LocalStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('lawsync_history', JSON.stringify(historyItems));
-    } catch (e) {
-      console.error("Failed to save history to localStorage:", e);
-    }
-  }, [historyItems]);
-
-  // Toggle Bookmark Handler
-  const handleToggleBookmark = (termId) => {
-    setBookmarkedIds(prev => {
-      if (prev.includes(termId)) {
-        return prev.filter(id => id !== termId);
-      } else {
-        return [...prev, termId];
-      }
-    });
-  };
-
-  // Clear Bookmarks Handler
-  const handleClearBookmarks = () => {
-    if (window.confirm("Are you sure you want to clear all saved bookmarks?")) {
-      setBookmarkedIds([]);
-    }
-  };
-
-  // Clear History Handler
-  const handleClearHistory = () => {
-    if (window.confirm("Are you sure you want to clear your search history?")) {
-      setHistoryItems([]);
-    }
-  };
-
-  // Add term to History and open detail modal
-  const handleSelectTerm = (term) => {
-    if (!term) return;
-    setActiveModalTerm(term);
-
-    // Record in history
-    setHistoryItems(prev => {
-      const filtered = prev.filter(item => item.id !== term.id);
-      const newEntry = {
-        id: term.id,
-        word: term.word,
-        category: term.category,
-        simpleMeaning: term.simpleMeaning,
-        timestamp: new Date().toISOString()
-      };
-      return [newEntry, ...filtered].slice(0, 30); // keep max 30 items
-    });
-  };
-
-  // Select term by ID (from history or related term)
-  const handleSelectTermById = (termId) => {
-    const found = sampleLegalTerms.find(t => t.id === termId || t.word.toLowerCase() === termId.toLowerCase());
-    if (found) {
-      handleSelectTerm(found);
-    } else {
-      // If word not matched by ID, search dictionary
-      setSearchQuery(termId);
-      setActiveTab('dictionary');
-    }
-  };
-
-  // Click on related term pill inside modal
-  const handleSelectRelatedTerm = (word) => {
-    const found = sampleLegalTerms.find(t => t.word.toLowerCase() === word.toLowerCase());
-    if (found) {
-      handleSelectTerm(found);
-    } else {
-      setActiveModalTerm(null);
-      setSearchQuery(word);
-      setActiveTab('dictionary');
-    }
-  };
-
-  // Trigger compare from modal or dictionary
-  const handleCompareTerm = (term) => {
-    setCompareTerm1Id(term.id);
-    setActiveTab('compare');
-  };
-
-  // Navigation with params
-  const handleNavigate = (tab, params = {}) => {
-    if (params.category) {
-      setSelectedCategory(params.category);
-    }
-    setActiveTab(tab);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  // Search from Home
-  const handleSearchSubmitFromHome = (query) => {
-    setSearchQuery(query);
-    setActiveTab('dictionary');
-  };
+function App() {
+  const [count, setCount] = useState(0)
 
   return (
-    <div className="app-container">
-      {/* Top Navigation */}
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        bookmarkCount={bookmarkedIds.length}
-      />
+    <>
+      <section id="center">
+        <div className="hero">
+          <img src={heroImg} className="base" width="170" height="179" alt="" />
+          <img src={reactLogo} className="framework" alt="React logo" />
+          <img src={viteLogo} className="vite" alt="Vite logo" />
+        </div>
+        <div>
+          <h1>Get started</h1>
+          <p>
+            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
+          </p>
+        </div>
+        <button
+          type="button"
+          className="counter"
+          onClick={() => setCount((count) => count + 1)}
+        >
+          Count is {count}
+        </button>
+      </section>
 
-      {/* Main Content Area */}
-      <main className="main-content">
-        {activeTab === 'home' && (
-          <Home
-            terms={sampleLegalTerms}
-            onSelectTerm={handleSelectTerm}
-            onNavigate={handleNavigate}
-            onSearchSubmit={handleSearchSubmitFromHome}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            bookmarkedIds={bookmarkedIds}
-            onToggleBookmark={handleToggleBookmark}
-          />
-        )}
+      <div className="ticks"></div>
 
-        {activeTab === 'dictionary' && (
-          <Dictionary
-            terms={sampleLegalTerms}
-            onSelectTerm={handleSelectTerm}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            selectedCategory={selectedCategory}
-            setSelectedCategory={setSelectedCategory}
-            bookmarkedIds={bookmarkedIds}
-            onToggleBookmark={handleToggleBookmark}
-          />
-        )}
+      <section id="next-steps">
+        <div id="docs">
+          <svg className="icon" role="presentation" aria-hidden="true">
+            <use href="/icons.svg#documentation-icon"></use>
+          </svg>
+          <h2>Documentation</h2>
+          <p>Your questions, answered</p>
+          <ul>
+            <li>
+              <a href="https://vite.dev/" target="_blank">
+                <img className="logo" src={viteLogo} alt="" />
+                Explore Vite
+              </a>
+            </li>
+            <li>
+              <a href="https://react.dev/" target="_blank">
+                <img className="button-icon" src={reactLogo} alt="" />
+                Learn more
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div id="social">
+          <svg className="icon" role="presentation" aria-hidden="true">
+            <use href="/icons.svg#social-icon"></use>
+          </svg>
+          <h2>Connect with us</h2>
+          <p>Join the Vite community</p>
+          <ul>
+            <li>
+              <a href="https://github.com/vitejs/vite" target="_blank">
+                <svg
+                  className="button-icon"
+                  role="presentation"
+                  aria-hidden="true"
+                >
+                  <use href="/icons.svg#github-icon"></use>
+                </svg>
+                GitHub
+              </a>
+            </li>
+            <li>
+              <a href="https://chat.vite.dev/" target="_blank">
+                <svg
+                  className="button-icon"
+                  role="presentation"
+                  aria-hidden="true"
+                >
+                  <use href="/icons.svg#discord-icon"></use>
+                </svg>
+                Discord
+              </a>
+            </li>
+            <li>
+              <a href="https://x.com/vite_js" target="_blank">
+                <svg
+                  className="button-icon"
+                  role="presentation"
+                  aria-hidden="true"
+                >
+                  <use href="/icons.svg#x-icon"></use>
+                </svg>
+                X.com
+              </a>
+            </li>
+            <li>
+              <a href="https://bsky.app/profile/vite.dev" target="_blank">
+                <svg
+                  className="button-icon"
+                  role="presentation"
+                  aria-hidden="true"
+                >
+                  <use href="/icons.svg#bluesky-icon"></use>
+                </svg>
+                Bluesky
+              </a>
+            </li>
+          </ul>
+        </div>
+      </section>
 
-        {activeTab === 'categories' && (
-          <Categories
-            terms={sampleLegalTerms}
-            onSelectTerm={handleSelectTerm}
-            bookmarkedIds={bookmarkedIds}
-            onToggleBookmark={handleToggleBookmark}
-          />
-        )}
-
-        {activeTab === 'compare' && (
-          <Compare
-            terms={sampleLegalTerms}
-            initialTerm1Id={compareTerm1Id}
-            initialTerm2Id={compareTerm2Id}
-          />
-        )}
-
-        {activeTab === 'quiz' && (
-          <Quiz />
-        )}
-
-        {activeTab === 'bookmarks' && (
-          <Bookmarks
-            terms={sampleLegalTerms}
-            bookmarkedIds={bookmarkedIds}
-            onToggleBookmark={handleToggleBookmark}
-            onClearBookmarks={handleClearBookmarks}
-            onSelectTerm={handleSelectTerm}
-            onNavigate={handleNavigate}
-          />
-        )}
-
-        {activeTab === 'history' && (
-          <History
-            historyItems={historyItems}
-            onClearHistory={handleClearHistory}
-            onSelectTermById={handleSelectTermById}
-            onNavigate={handleNavigate}
-          />
-        )}
-      </main>
-
-      {/* Term Inspection Modal */}
-      {activeModalTerm && (
-        <TermDetailsModal
-          term={activeModalTerm}
-          onClose={() => setActiveModalTerm(null)}
-          isBookmarked={bookmarkedIds.includes(activeModalTerm.id)}
-          onToggleBookmark={handleToggleBookmark}
-          onSelectRelatedTerm={handleSelectRelatedTerm}
-          onCompareTerm={handleCompareTerm}
-        />
-      )}
-
-      {/* Footer */}
-      <Footer onNavigate={handleNavigate} />
-    </div>
-  );
+      <div className="ticks"></div>
+      <section id="spacer"></section>
+    </>
+  )
 }
+
+export default App

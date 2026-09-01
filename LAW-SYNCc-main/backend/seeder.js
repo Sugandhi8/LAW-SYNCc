@@ -1,46 +1,24 @@
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const { sequelize, connectDB } = require('./config/db');
 
 // Load environment variables
 dotenv.config();
 
 // Load Models
-const User = require('./models/User');
-const Term = require('./models/Term');
-const Bookmark = require('./models/Bookmark');
-const History = require('./models/History');
-const Quiz = require('./models/Quiz');
+const { User, Term, Bookmark, History, Quiz } = require('./models');
 
 // Load Seed Data
 const seedTerms = require('./data/seedTerms');
 const seedQuizzes = require('./data/seedQuizzes');
-
-// Connect to DB
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/legal_dictionary');
-    console.log('MongoDB connected for seeding...');
-  } catch (err) {
-    console.error('Error connecting to database:', err.message);
-    process.exit(1);
-  }
-};
 
 // Import Data
 const importData = async () => {
   try {
     await connectDB();
 
-    // Clear existing data
-    await Promise.all([
-      User.deleteMany(),
-      Term.deleteMany(),
-      Bookmark.deleteMany(),
-      History.deleteMany(),
-      Quiz.deleteMany()
-    ]);
-
-    console.log('Cleared existing collections.');
+    // Reset database schema and tables
+    await sequelize.sync({ force: true });
+    console.log('Cleared existing PostgreSQL tables.');
 
     // Seed default admin and user
     const adminUser = await User.create({
@@ -61,29 +39,29 @@ const importData = async () => {
     console.log(`Created demo user account: ${demoUser.email} (password: demopassword123)`);
 
     // Seed Legal Terms
-    const createdTerms = await Term.insertMany(seedTerms);
-    console.log(`Successfully seeded ${createdTerms.length} legal terms.`);
+    const createdTerms = await Term.bulkCreate(seedTerms);
+    console.log(`Successfully seeded ${createdTerms.length} legal terms into PostgreSQL.`);
 
     // Seed Quizzes
-    const createdQuizzes = await Quiz.insertMany(seedQuizzes);
-    console.log(`Successfully seeded ${createdQuizzes.length} quiz questions.`);
+    const createdQuizzes = await Quiz.bulkCreate(seedQuizzes);
+    console.log(`Successfully seeded ${createdQuizzes.length} quiz questions into PostgreSQL.`);
 
     // Seed sample bookmarks & history for demo user
     if (createdTerms.length >= 3) {
-      await Bookmark.create([
-        { user: demoUser._id, term: createdTerms[0]._id },
-        { user: demoUser._id, term: createdTerms[1]._id }
+      await Bookmark.bulkCreate([
+        { userId: demoUser.id, termId: createdTerms[0].id },
+        { userId: demoUser.id, termId: createdTerms[1].id }
       ]);
 
-      await History.create([
-        { user: demoUser._id, term: createdTerms[0]._id, searchedAt: new Date(Date.now() - 3600000) },
-        { user: demoUser._id, term: createdTerms[2]._id, searchedAt: new Date() }
+      await History.bulkCreate([
+        { userId: demoUser.id, termId: createdTerms[0].id, searchedAt: new Date(Date.now() - 3600000) },
+        { userId: demoUser.id, termId: createdTerms[2].id, searchedAt: new Date() }
       ]);
 
       console.log('Seeded sample bookmarks and history for demo user.');
     }
 
-    console.log('🎉 Data Imported Successfully!');
+    console.log('🎉 PostgreSQL Data Imported Successfully!');
     process.exit(0);
   } catch (error) {
     console.error('❌ Data Import Failed:', error);
@@ -96,15 +74,8 @@ const destroyData = async () => {
   try {
     await connectDB();
 
-    await Promise.all([
-      User.deleteMany(),
-      Term.deleteMany(),
-      Bookmark.deleteMany(),
-      History.deleteMany(),
-      Quiz.deleteMany()
-    ]);
-
-    console.log('💥 All Data Successfully Destroyed!');
+    await sequelize.sync({ force: true });
+    console.log('💥 All PostgreSQL Tables and Data Successfully Destroyed!');
     process.exit(0);
   } catch (error) {
     console.error('❌ Data Destruction Failed:', error);

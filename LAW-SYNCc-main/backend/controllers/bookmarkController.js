@@ -1,20 +1,25 @@
-const Bookmark = require('../models/Bookmark');
-const Term = require('../models/Term');
+const { Bookmark, Term } = require('../models');
 
 // @desc    Get all bookmarked terms for current user
 // @route   GET /api/bookmarks
 // @access  Private
 const getBookmarks = async (req, res, next) => {
   try {
-    const bookmarks = await Bookmark.find({ user: req.user._id })
-      .populate('term')
-      .sort({ createdAt: -1 });
+    const bookmarks = await Bookmark.findAll({
+      where: { userId: req.user.id },
+      include: [
+        {
+          model: Term,
+          as: 'term'
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
 
-    // Filter out bookmarks whose term might have been deleted
     const validBookmarks = bookmarks
       .filter((b) => b.term !== null)
       .map((b) => ({
-        bookmarkId: b._id,
+        bookmarkId: b.id,
         savedAt: b.createdAt,
         term: b.term
       }));
@@ -37,7 +42,7 @@ const addBookmark = async (req, res, next) => {
     const { termId } = req.params;
 
     // Verify term exists
-    const term = await Term.findById(termId);
+    const term = await Term.findByPk(termId);
     if (!term) {
       return res.status(404).json({
         success: false,
@@ -45,30 +50,17 @@ const addBookmark = async (req, res, next) => {
       });
     }
 
-    // Check if bookmark already exists
-    const existingBookmark = await Bookmark.findOne({
-      user: req.user._id,
-      term: termId
+    const [bookmark, created] = await Bookmark.findOrCreate({
+      where: {
+        userId: req.user.id,
+        termId: term.id
+      }
     });
 
-    if (existingBookmark) {
-      return res.status(200).json({
-        success: true,
-        isBookmarked: true,
-        message: 'Term is already bookmarked',
-        data: existingBookmark
-      });
-    }
-
-    const bookmark = await Bookmark.create({
-      user: req.user._id,
-      term: termId
-    });
-
-    res.status(201).json({
+    res.status(created ? 201 : 200).json({
       success: true,
       isBookmarked: true,
-      message: 'Term bookmarked successfully',
+      message: created ? 'Term bookmarked successfully' : 'Term is already bookmarked',
       data: bookmark
     });
   } catch (error) {
@@ -83,12 +75,14 @@ const removeBookmark = async (req, res, next) => {
   try {
     const { termId } = req.params;
 
-    const result = await Bookmark.findOneAndDelete({
-      user: req.user._id,
-      term: termId
+    const rowsDeleted = await Bookmark.destroy({
+      where: {
+        userId: req.user.id,
+        termId: parseInt(termId, 10)
+      }
     });
 
-    if (!result) {
+    if (!rowsDeleted) {
       return res.status(404).json({
         success: false,
         message: 'Bookmark not found for this term'
@@ -113,8 +107,10 @@ const checkBookmarkStatus = async (req, res, next) => {
     const { termId } = req.params;
 
     const bookmark = await Bookmark.findOne({
-      user: req.user._id,
-      term: termId
+      where: {
+        userId: req.user.id,
+        termId: parseInt(termId, 10)
+      }
     });
 
     res.status(200).json({

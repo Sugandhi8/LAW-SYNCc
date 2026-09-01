@@ -1,20 +1,26 @@
-const History = require('../models/History');
-const Term = require('../models/Term');
+const { History, Term } = require('../models');
 
 // @desc    Get user search and view history
 // @route   GET /api/history
 // @access  Private
 const getHistory = async (req, res, next) => {
   try {
-    const history = await History.find({ user: req.user._id })
-      .populate('term')
-      .sort({ searchedAt: -1 })
-      .limit(50);
+    const history = await History.findAll({
+      where: { userId: req.user.id },
+      include: [
+        {
+          model: Term,
+          as: 'term'
+        }
+      ],
+      order: [['searchedAt', 'DESC']],
+      limit: 50
+    });
 
     const validHistory = history
       .filter((h) => h.term !== null)
       .map((h) => ({
-        historyId: h._id,
+        historyId: h.id,
         searchedAt: h.searchedAt,
         term: h.term
       }));
@@ -36,7 +42,7 @@ const addHistory = async (req, res, next) => {
   try {
     const { termId } = req.params;
 
-    const term = await Term.findById(termId);
+    const term = await Term.findByPk(termId);
     if (!term) {
       return res.status(404).json({
         success: false,
@@ -44,10 +50,9 @@ const addHistory = async (req, res, next) => {
       });
     }
 
-    // Upsert or create entry to refresh timestamp
     const entry = await History.create({
-      user: req.user._id,
-      term: term._id,
+      userId: req.user.id,
+      termId: term.id,
       searchedAt: new Date()
     });
 
@@ -68,12 +73,14 @@ const deleteHistoryItem = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const entry = await History.findOneAndDelete({
-      _id: id,
-      user: req.user._id
+    const rowsDeleted = await History.destroy({
+      where: {
+        id: parseInt(id, 10),
+        userId: req.user.id
+      }
     });
 
-    if (!entry) {
+    if (!rowsDeleted) {
       return res.status(404).json({
         success: false,
         message: 'History record not found'
@@ -94,7 +101,9 @@ const deleteHistoryItem = async (req, res, next) => {
 // @access  Private
 const clearHistory = async (req, res, next) => {
   try {
-    await History.deleteMany({ user: req.user._id });
+    await History.destroy({
+      where: { userId: req.user.id }
+    });
 
     res.status(200).json({
       success: true,
