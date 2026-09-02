@@ -1,0 +1,254 @@
+# Legal Dictionary App — Frontend Documentation
+
+## 1. Frontend Overview
+
+The frontend is the user-facing part of the Legal Dictionary App. It provides a modern, responsive interface where users can search legal terms, read definitions, bookmark terms, take quizzes, compare terms, and manage their profile.
+
+## 2. Frontend Technology Stack
+
+- React.js
+- Vite
+- Tailwind CSS
+- React Router DOM
+- Axios
+- Lucide React
+- Web Speech API (optional)
+- Context API / Zustand (optional state management)
+
+## 3. Frontend Features
+
+### User Pages
+- Home
+- Login
+- Register
+- Dictionary
+- Categories
+- Term Details
+- Bookmarks
+- Search History
+- Quiz
+- Compare Terms
+- Profile
+
+### UI Features
+- Search bar
+- Popular legal terms
+- Term of the Day
+- Category cards
+- Bookmark button
+- Text-to-speech button
+- Voice search
+- Responsive navigation
+- Dark/light theme (optional)
+- Loading and error states
+
+## 4. Frontend Folder Structure
+
+```text
+frontend/
+├── public/
+├── src/
+│   ├── assets/
+│   ├── components/
+│   │   ├── Navbar.jsx
+│   │   ├── Footer.jsx
+│   │   ├── SearchBar.jsx
+│   │   ├── TermCard.jsx
+│   │   ├── CategoryCard.jsx
+│   │   ├── BookmarkButton.jsx
+│   │   ├── QuizCard.jsx
+│   │   ├── VoiceSearch.jsx
+│   │   └── TextToSpeech.jsx
+│   ├── pages/
+│   │   ├── Home.jsx
+│   │   ├── Login.jsx
+│   │   ├── Register.jsx
+│   │   ├── Dictionary.jsx
+│   │   ├── TermDetails.jsx
+│   │   ├── Categories.jsx
+│   │   ├── Bookmarks.jsx
+│   │   ├── History.jsx
+│   │   ├── Quiz.jsx
+│   │   ├── Compare.jsx
+│   │   └── Profile.jsx
+│   ├── services/
+│   │   └── api.js
+│   ├── context/
+│   │   └── AuthContext.jsx
+│   ├── utils/
+│   ├── App.jsx
+│   └── main.jsx
+├── .env
+├── index.html
+└── package.json
+```
+
+## 5. Page Details
+
+### Home Page
+Contains:
+- Application introduction
+- Search bar
+- Popular terms
+- Categories
+- Term of the Day
+- Quick links to dictionary and quiz
+
+### Dictionary Page
+Users can:
+- Search terms
+- Filter by category
+- Browse terms
+- Open term details
+
+### Term Details Page
+Displays:
+- Legal term
+- Legal definition
+- Simple meaning
+- Example
+- Related laws
+- Related terms
+- Listen button
+- Bookmark button
+
+### Login/Register
+Provides user authentication screens and communicates with backend authentication APIs.
+
+### Bookmarks
+Displays all terms saved by the logged-in user.
+
+### History
+Displays recently searched terms.
+
+### Quiz
+Displays questions, answer options, score, and explanations.
+
+### Compare
+Allows users to select two legal terms and compare their meanings, differences, and related information.
+
+## 6. Routing
+
+Example routes:
+
+```text
+/                   → Home
+/login              → Login
+/register           → Register
+/dictionary         → Dictionary
+/term/:id           → Term Details
+/categories         → Categories
+/bookmarks          → Bookmarks
+/history            → History
+/quiz               → Quiz
+/compare            → Compare
+/profile            → Profile
+```
+
+## 7. API Integration
+
+Axios is used to communicate with the backend.
+
+Example:
+
+```javascript
+import axios from "axios";
+
+const API = axios.create({
+  baseURL: import.meta.env.VITE_API_URL
+});
+
+export default API;
+```
+
+Example search request:
+
+```javascript
+const response = await API.get("/terms", {
+  params: { search: searchTerm }
+});
+```
+
+## 8. Environment Variable
+
+Create `.env`:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+## 9. Frontend Installation
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend normally runs at:
+
+```text
+http://localhost:5173
+```
+
+## 10. Recommended Packages
+
+```bash
+npm install react-router-dom axios lucide-react
+```
+
+## 11. Frontend Data Flow
+
+```text
+User
+ ↓
+React Component
+ ↓
+Axios
+ ↓
+Backend REST API
+ ↓
+JSON Response
+ ↓
+React State
+ ↓
+UI Update
+```
+
+## 12. Responsive Design
+
+The frontend should work on:
+
+- Desktop
+- Laptop
+- Tablet
+- Mobile
+
+Tailwind CSS can be used for responsive layouts.
+
+## 13. Frontend Testing
+
+Test:
+
+- Page navigation
+- Search functionality
+- Login/Register forms
+- Bookmark functionality
+- Quiz
+- Compare feature
+- API errors
+- Mobile responsiveness
+
+## 14. Frontend Future Enhancements
+
+- Progressive Web App
+- React Native mobile application
+- Multilingual UI
+- Tamil + English support
+- Advanced AI search
+- Personalized dashboard
+- Offline dictionary support
+
+## 15. Frontend Conclusion
+
+The React frontend provides the complete user interface of the Legal Dictionary App and communicates with the backend through REST APIs. Its component-based architecture makes the application easy to maintain, expand, and deploy.

@@ -1,0 +1,380 @@
+# Legal Dictionary App — Backend Documentation
+
+## 1. Backend Overview
+
+The backend is the server-side part of the Legal Dictionary App. It manages authentication, legal terms, users, bookmarks, search history, quizzes, database operations, and REST APIs.
+
+## 2. Backend Technology Stack
+
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
+- JWT
+- bcryptjs
+- CORS
+- dotenv
+- Nodemailer (optional)
+- Multer (optional)
+
+## 3. Backend Responsibilities
+
+- User registration and login
+- Password hashing
+- JWT authentication
+- Legal term CRUD
+- Search and filtering
+- Bookmark management
+- Search history
+- Quiz management
+- User profile management
+- Admin authorization
+- Database communication
+- API error handling
+
+## 4. Backend Folder Structure
+
+```text
+backend/
+├── config/
+│   └── db.js
+├── controllers/
+│   ├── authController.js
+│   ├── termController.js
+│   ├── bookmarkController.js
+│   ├── historyController.js
+│   ├── quizController.js
+│   └── userController.js
+├── middleware/
+│   ├── authMiddleware.js
+│   ├── roleMiddleware.js
+│   └── errorMiddleware.js
+├── models/
+│   ├── User.js
+│   ├── Term.js
+│   ├── Bookmark.js
+│   ├── History.js
+│   └── Quiz.js
+├── routes/
+│   ├── authRoutes.js
+│   ├── termRoutes.js
+│   ├── bookmarkRoutes.js
+│   ├── historyRoutes.js
+│   ├── quizRoutes.js
+│   └── userRoutes.js
+├── utils/
+├── server.js
+├── .env
+└── package.json
+```
+
+## 5. Database
+
+MongoDB is used to store application data.
+
+### Users Collection
+
+```text
+_id
+name
+email
+password
+role
+createdAt
+```
+
+### Terms Collection
+
+```text
+_id
+word
+definition
+simpleMeaning
+example
+category
+relatedLaws
+relatedTerms
+createdAt
+```
+
+### Bookmarks Collection
+
+```text
+_id
+userId
+termId
+createdAt
+```
+
+### History Collection
+
+```text
+_id
+userId
+termId
+searchedAt
+```
+
+### Quiz Collection
+
+```text
+_id
+question
+options
+answer
+explanation
+createdAt
+```
+
+## 6. API Endpoints
+
+### Authentication
+
+```text
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+```
+
+### Legal Terms
+
+```text
+GET    /api/terms
+GET    /api/terms/:id
+POST   /api/terms
+PUT    /api/terms/:id
+DELETE /api/terms/:id
+```
+
+### Bookmarks
+
+```text
+GET    /api/bookmarks
+POST   /api/bookmarks/:termId
+DELETE /api/bookmarks/:termId
+```
+
+### Search History
+
+```text
+GET    /api/history
+POST   /api/history/:termId
+DELETE /api/history/:termId
+```
+
+### User Profile
+
+```text
+GET /api/profile
+PUT /api/profile
+```
+
+### Quiz
+
+```text
+GET  /api/quizzes
+POST /api/quiz/attempt
+```
+
+## 7. Authentication Flow
+
+```text
+Register
+   ↓
+Validate User
+   ↓
+Hash Password using bcrypt
+   ↓
+Save User in MongoDB
+   ↓
+Login
+   ↓
+Verify Password
+   ↓
+Generate JWT
+   ↓
+Frontend receives token
+   ↓
+Protected API Requests
+```
+
+## 8. Middleware
+
+### Authentication Middleware
+
+Checks whether the request contains a valid JWT token.
+
+### Role Middleware
+
+Checks whether the user is an admin before allowing admin operations.
+
+### Error Middleware
+
+Handles server and API errors and returns proper HTTP responses.
+
+## 9. Backend Environment Variables
+
+Create `.env`:
+
+```env
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/legal_dictionary
+JWT_SECRET=your_secret_key
+```
+
+Optional:
+
+```env
+OPENAI_API_KEY=your_api_key
+EMAIL_USER=your_email
+EMAIL_PASS=your_password
+```
+
+Never commit `.env` to GitHub.
+
+## 10. Backend Installation
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+Backend normally runs at:
+
+```text
+http://localhost:5000
+```
+
+## 11. Required Packages
+
+```bash
+npm install express mongoose cors dotenv bcryptjs jsonwebtoken
+npm install multer nodemailer
+npm install -D nodemon
+```
+
+## 12. Server Architecture
+
+```text
+Client
+  ↓
+Express Router
+  ↓
+Middleware
+  ↓
+Controller
+  ↓
+Mongoose Model
+  ↓
+MongoDB
+  ↓
+Controller
+  ↓
+JSON Response
+  ↓
+Client
+```
+
+## 13. Legal Term CRUD
+
+### Create
+Admin adds a new legal term.
+
+### Read
+Users search and view legal terms.
+
+### Update
+Admin edits an existing term.
+
+### Delete
+Admin removes an incorrect or outdated term.
+
+## 14. Search API
+
+Example:
+
+```text
+GET /api/terms?search=bail
+```
+
+The backend searches the terms collection and returns matching legal terms.
+
+## 15. Security
+
+The backend should implement:
+
+- bcrypt password hashing
+- JWT authentication
+- Protected routes
+- Role-based authorization
+- Input validation
+- CORS configuration
+- Secure environment variables
+- Proper error handling
+- Rate limiting for production
+- Database access controls
+
+## 16. Backend Testing
+
+Test:
+
+- Registration
+- Login
+- Invalid credentials
+- JWT authorization
+- Term CRUD
+- Search
+- Bookmarks
+- History
+- Quiz submission
+- Admin permissions
+- Invalid API requests
+
+Example:
+
+```text
+POST /api/auth/login
+
+200 OK
+→ Login successful
+
+401 Unauthorized
+→ Invalid email/password
+```
+
+## 17. Backend Deployment
+
+Possible backend platforms:
+
+- Render
+- Railway
+
+Database:
+
+- MongoDB Atlas
+
+Production architecture:
+
+```text
+React Frontend
+      ↓
+Node.js + Express API
+      ↓
+MongoDB Atlas
+```
+
+## 18. Backend Future Enhancements
+
+- AI legal explanations
+- AI-powered search
+- Recommendation engine
+- Multilingual APIs
+- Analytics
+- Admin dashboard APIs
+- Email notifications
+- Advanced legal document search
+
+## 19. Backend Conclusion
+
+The Node.js and Express backend provides the core business logic and REST API for the Legal Dictionary App. MongoDB stores users, legal terms, bookmarks, history, and quiz information, while JWT and bcrypt provide secure authentication.
