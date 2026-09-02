@@ -3,7 +3,7 @@
  * Centralized API helper module to communicate with the Express + PostgreSQL backend.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 /**
  * Helper to handle fetch responses and standardize errors
@@ -28,7 +28,9 @@ async function request(endpoint, options = {}) {
 
     return data;
   } catch (error) {
-    console.error(`[API Error] ${endpoint}:`, error.message);
+    if (error.name === 'TypeError' && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
+      throw new Error('Unable to connect to the backend server. Please ensure the Express server is running on port 5000.');
+    }
     throw error;
   }
 }
@@ -100,13 +102,34 @@ export const api = {
   },
 
   /**
-   * Submit quiz answer attempts
-   * @param {Array} answers - [{ quizId, selectedAnswer }]
+   * User Authentication: Login with email & password
    */
-  async submitQuizAttempt(answers) {
-    return request('/quiz/attempt', {
+  async login(credentials) {
+    return request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ answers }),
+      body: JSON.stringify(credentials),
+    });
+  },
+
+  /**
+   * User Authentication: Register new account
+   * @param {Object} userData - { name, email, mobileNumber, password }
+   */
+  async register(userData) {
+    return request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  },
+
+  /**
+   * User Authentication: Get current user profile
+   */
+  async getMe(token) {
+    return request('/auth/me', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
   },
 };

@@ -1,7 +1,24 @@
 import React from 'react';
-import { Scale, BookOpen, Sparkles, GitCompare, HelpCircle, Layers, CheckCircle2, AlertCircle } from 'lucide-react';
+import {
+  Scale,
+  BookOpen,
+  Sparkles,
+  GitCompare,
+  HelpCircle,
+  Layers,
+  AlertCircle,
+  LogOut,
+  User
+} from 'lucide-react';
 
-export default function Navbar({ activeTab, setActiveTab, backendStatus, termCount }) {
+export default function Navbar({
+  activeTab,
+  setActiveTab,
+  backendStatus,
+  termCount,
+  currentUser,
+  onLogout,
+}) {
   const navItems = [
     { id: 'dictionary', label: 'Legal Dictionary', icon: BookOpen },
     { id: 'termofday', label: 'Term of the Day', icon: Sparkles },
@@ -45,12 +62,12 @@ export default function Navbar({ activeTab, setActiveTab, backendStatus, termCou
           })}
         </nav>
 
-        {/* Status / DB Connection Badge */}
-        <div className="navbar-status">
+        {/* Status / DB Connection Badge & User Controls */}
+        <div className="navbar-right-actions">
           {backendStatus.online ? (
             <div className="status-badge status-online" title="Connected to PostgreSQL Database">
               <span className="status-dot"></span>
-              <span className="status-label">PostgreSQL 18</span>
+              <span className="status-label">PostgreSQL</span>
               <span className="status-count">{termCount} Terms</span>
             </div>
           ) : (
@@ -59,8 +76,28 @@ export default function Navbar({ activeTab, setActiveTab, backendStatus, termCou
               <span className="status-label">Connecting...</span>
             </div>
           )}
+
+          {/* User Profile & Logout */}
+          {currentUser && (
+            <div className="user-profile-controls">
+              <div className="user-avatar-badge" title={currentUser.email}>
+                <User size={15} />
+                <span className="user-display-name">{currentUser.name || currentUser.email}</span>
+              </div>
+              <button
+                type="button"
+                className="logout-action-btn"
+                onClick={onLogout}
+                title="Sign Out"
+              >
+                <LogOut size={16} />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
   );
 }
+

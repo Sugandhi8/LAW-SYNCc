@@ -15,7 +15,7 @@ const generateToken = (id) => {
 // @access  Public
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, mobileNumber, phone, role } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -35,10 +35,11 @@ const register = async (req, res, next) => {
       });
     }
 
-    // Create user
+    // Create user with hashed password (handled by model hook)
     const user = await User.create({
-      name,
+      name: name.trim(),
       email: emailLower,
+      mobileNumber: mobileNumber || phone || null,
       password,
       role: role === 'admin' ? 'admin' : 'user'
     });
@@ -53,6 +54,7 @@ const register = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        mobileNumber: user.mobileNumber,
         role: user.role,
         createdAt: user.createdAt
       }
@@ -98,6 +100,7 @@ const login = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        mobileNumber: user.mobileNumber,
         role: user.role,
         createdAt: user.createdAt
       }
@@ -132,6 +135,7 @@ const getMe = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        mobileNumber: user.mobileNumber,
         role: user.role,
         createdAt: user.createdAt,
         stats: {

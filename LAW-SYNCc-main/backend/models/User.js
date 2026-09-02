@@ -28,6 +28,10 @@ const User = sequelize.define(
         this.setDataValue('email', val ? val.toLowerCase().trim() : val);
       }
     },
+    mobileNumber: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     password: {
       type: DataTypes.STRING,
       allowNull: false,

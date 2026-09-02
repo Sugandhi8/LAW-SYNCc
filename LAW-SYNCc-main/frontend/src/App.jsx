@@ -11,6 +11,7 @@ import CompareView from './components/CompareView';
 import QuizView from './components/QuizView';
 import LoadingSkeleton from './components/LoadingSkeleton';
 import Footer from './components/Footer';
+import AuthPage from './components/AuthPage';
 import { api } from './services/api';
 import {
   Scale,
@@ -26,6 +27,39 @@ import {
 import './App.css';
 
 export default function App() {
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      const token = localStorage.getItem('lawsync_token');
+      const user = localStorage.getItem('lawsync_user');
+      return Boolean(token && user);
+    } catch {
+      return false;
+    }
+  });
+
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lawsync_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const handleLoginSuccess = (user, token) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('lawsync_token');
+    localStorage.removeItem('lawsync_user');
+    setIsAuthenticated(false);
+    setCurrentUser(null);
+    setActiveTab('dictionary');
+  };
+
   // Navigation State
   const [activeTab, setActiveTab] = useState('dictionary'); // 'dictionary' | 'termofday' | 'categories' | 'compare' | 'quiz' | 'bookmarks'
 
@@ -114,7 +148,7 @@ export default function App() {
         category: selectedCategory !== 'all' ? selectedCategory : undefined,
         letter: selectedLetter || undefined,
         sort: sortOption,
-        limit: 50, // Fetch all available terms
+        limit: 500, // Fetch all available terms dynamically
       };
 
       const res = await api.getTerms(params);
@@ -184,6 +218,11 @@ export default function App() {
     return terms;
   }, [terms, activeTab, bookmarkedIds]);
 
+  // If not authenticated, render Sign In / Registration flow directly
+  if (!isAuthenticated) {
+    return <AuthPage onLoginSuccess={handleLoginSuccess} />;
+  }
+
   return (
     <div className="lawsync-app">
       {/* Navigation Header */}
@@ -192,6 +231,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         backendStatus={backendStatus}
         termCount={totalTermsCount || terms.length}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       <main className="main-content-wrap">

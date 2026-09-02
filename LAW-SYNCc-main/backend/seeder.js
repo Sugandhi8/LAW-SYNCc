@@ -24,6 +24,7 @@ const importData = async () => {
     const adminUser = await User.create({
       name: 'Legal Admin',
       email: 'admin@lawsync.com',
+      mobileNumber: '9876543210',
       password: 'adminpassword123',
       role: 'admin'
     });
@@ -31,6 +32,7 @@ const importData = async () => {
     const demoUser = await User.create({
       name: 'Advocate John',
       email: 'demo@lawsync.com',
+      mobileNumber: '9123456780',
       password: 'demopassword123',
       role: 'user'
     });
