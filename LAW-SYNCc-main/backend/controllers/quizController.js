@@ -34,7 +34,10 @@ const attemptQuiz = async (req, res, next) => {
       });
     }
 
-    const questionIds = answers.map((a) => parseInt(a.questionId, 10)).filter((id) => !isNaN(id));
+    const questionIds = answers
+      .map((a) => parseInt(a.questionId || a.quizId || a.id, 10))
+      .filter((id) => !isNaN(id));
+
     const questions = await Quiz.findAll({
       where: {
         id: {
@@ -48,22 +51,26 @@ const attemptQuiz = async (req, res, next) => {
 
     let score = 0;
     const results = answers.map((ans) => {
-      const qId = parseInt(ans.questionId, 10);
+      const qId = parseInt(ans.questionId || ans.quizId || ans.id, 10);
       const q = questionMap.get(qId);
       if (!q) {
         return {
-          questionId: ans.questionId,
+          questionId: qId,
+          quizId: qId,
           error: 'Question not found'
         };
       }
 
-      const isCorrect = q.correctAnswer === ans.selectedOption;
+      const selOpt = ans.selectedOption !== undefined ? ans.selectedOption : (ans.selectedAnswer !== undefined ? ans.selectedAnswer : -1);
+      const isCorrect = q.correctAnswer === selOpt;
       if (isCorrect) score += 1;
 
       return {
         questionId: q.id,
+        quizId: q.id,
         question: q.question,
-        selectedOption: ans.selectedOption,
+        selectedOption: selOpt,
+        selectedAnswer: selOpt,
         correctAnswer: q.correctAnswer,
         isCorrect,
         explanation: q.explanation
@@ -76,6 +83,7 @@ const attemptQuiz = async (req, res, next) => {
     res.status(200).json({
       success: true,
       score,
+      total: totalQuestions,
       totalQuestions,
       percentage,
       passed: percentage >= 60,

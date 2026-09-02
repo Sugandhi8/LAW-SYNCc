@@ -6,6 +6,7 @@ import {
   GitCompare,
   HelpCircle,
   Layers,
+  Bookmark,
   AlertCircle,
   LogOut,
   User
@@ -16,6 +17,7 @@ export default function Navbar({
   setActiveTab,
   backendStatus,
   termCount,
+  bookmarkedCount = 0,
   currentUser,
   onLogout,
 }) {
@@ -25,6 +27,7 @@ export default function Navbar({
     { id: 'categories', label: 'Categories', icon: Layers },
     { id: 'compare', label: 'Compare Terms', icon: GitCompare },
     { id: 'quiz', label: 'Legal Quiz', icon: HelpCircle },
+    { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark, badge: bookmarkedCount },
   ];
 
   return (
@@ -57,6 +60,9 @@ export default function Navbar({
               >
                 <Icon size={17} className="nav-icon" />
                 <span>{item.label}</span>
+                {typeof item.badge === 'number' && item.badge > 0 && (
+                  <span className="nav-tab-badge">{item.badge}</span>
+                )}
               </button>
             );
           })}

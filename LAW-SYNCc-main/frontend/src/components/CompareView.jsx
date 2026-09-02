@@ -10,11 +10,16 @@ export default function CompareView({ allTerms = [], initialTerm1 = '', initialT
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (allTerms.length >= 2 && !term1Word && !term2Word) {
-      setTerm1Word(allTerms[0].word);
-      setTerm2Word(allTerms[4]?.word || allTerms[1].word);
+    if (initialTerm1) {
+      setTerm1Word(initialTerm1);
     }
-  }, [allTerms]);
+    if (initialTerm2) {
+      setTerm2Word(initialTerm2);
+    } else if (allTerms.length >= 2 && (!term1Word || !term2Word)) {
+      if (!term1Word) setTerm1Word(allTerms[0].word);
+      if (!term2Word) setTerm2Word(allTerms[4]?.word || allTerms[1].word);
+    }
+  }, [allTerms, initialTerm1, initialTerm2]);
 
   const handleCompare = async () => {
     if (!term1Word || !term2Word) return;

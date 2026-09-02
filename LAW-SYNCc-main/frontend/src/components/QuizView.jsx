@@ -40,7 +40,9 @@ export default function QuizView() {
 
   const handleSubmitQuiz = async () => {
     const answersPayload = quizzes.map((q) => ({
+      questionId: q.id,
       quizId: q.id,
+      selectedOption: selectedAnswers[q.id] ?? -1,
       selectedAnswer: selectedAnswers[q.id] ?? -1,
     }));
 
@@ -48,7 +50,12 @@ export default function QuizView() {
       setLoading(true);
       const res = await api.submitQuizAttempt(answersPayload);
       if (res.success) {
-        setScoreResult(res);
+        setScoreResult({
+          score: res.score,
+          total: res.total || res.totalQuestions || quizzes.length,
+          percentage: res.percentage,
+          results: res.results
+        });
         setSubmitted(true);
       }
     } catch (err) {

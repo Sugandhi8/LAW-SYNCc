@@ -132,6 +132,87 @@ export const api = {
       },
     });
   },
+
+  /**
+   * Bookmarks: Get all bookmarked terms for current user
+   */
+  async getBookmarks(token) {
+    return request('/bookmarks', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Bookmarks: Add bookmark for a term
+   */
+  async addBookmark(termId, token) {
+    return request(`/bookmarks/${encodeURIComponent(termId)}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Bookmarks: Remove bookmark for a term
+   */
+  async removeBookmark(termId, token) {
+    return request(`/bookmarks/${encodeURIComponent(termId)}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Bookmarks: Check if a term is bookmarked
+   */
+  async checkBookmarkStatus(termId, token) {
+    return request(`/bookmarks/check/${encodeURIComponent(termId)}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * History: Get user search and view history
+   */
+  async getHistory(token) {
+    return request('/history', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * History: Record view history for a term
+   */
+  async addHistory(termId, token) {
+    return request(`/history/${encodeURIComponent(termId)}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * History: Clear all history
+   */
+  async clearHistory(token) {
+    return request('/history', {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
 };
 
 export default api;

@@ -58,7 +58,7 @@ export default function TermOfTheDay({
     return null; // Gracefully hide if not available
   }
 
-  const bookmarked = isBookmarked(term.id);
+  const bookmarked = typeof isBookmarked === 'function' ? isBookmarked(term.id) : Boolean(isBookmarked);
 
   return (
     <section className="tod-container">

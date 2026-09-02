@@ -57,6 +57,7 @@ export default function App() {
     localStorage.removeItem('lawsync_user');
     setIsAuthenticated(false);
     setCurrentUser(null);
+    setBookmarkedIds([]);
     setActiveTab('dictionary');
   };
 
@@ -84,29 +85,62 @@ export default function App() {
   const [selectedTermForModal, setSelectedTermForModal] = useState(null);
   const [compareSelection, setCompareSelection] = useState({ term1: '', term2: '' });
 
-  // Bookmarks State (Stored in localStorage)
+  // Bookmarks State (Per-user isolation and DB sync)
   const [bookmarkedIds, setBookmarkedIds] = useState(() => {
     try {
-      const saved = localStorage.getItem('lawsync_bookmarks');
-      return saved ? JSON.parse(saved) : [1, 2];
+      const user = localStorage.getItem('lawsync_user');
+      const userId = user ? JSON.parse(user)?.id : null;
+      if (!userId) return [];
+      const saved = localStorage.getItem(`lawsync_bookmarks_${userId}`);
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return [1, 2];
+      return [];
     }
   });
 
-  // Save bookmarks to localStorage
+  // Fetch bookmarks from backend on user session
   useEffect(() => {
-    try {
-      localStorage.setItem('lawsync_bookmarks', JSON.stringify(bookmarkedIds));
-    } catch (e) {
-      console.warn('Failed to save bookmarks to localStorage', e);
+    async function loadUserBookmarks() {
+      const token = localStorage.getItem('lawsync_token');
+      if (token && currentUser?.id) {
+        try {
+          const res = await api.getBookmarks(token);
+          if (res.success && Array.isArray(res.data)) {
+            const dbIds = res.data.map((b) => b.term?.id || b.termId).filter(Boolean);
+            setBookmarkedIds(dbIds);
+            localStorage.setItem(`lawsync_bookmarks_${currentUser.id}`, JSON.stringify(dbIds));
+          }
+        } catch (e) {
+          console.warn('Failed to sync bookmarks from database', e);
+        }
+      }
     }
-  }, [bookmarkedIds]);
+    loadUserBookmarks();
+  }, [currentUser]);
 
-  const toggleBookmark = (termId) => {
-    setBookmarkedIds((prev) =>
-      prev.includes(termId) ? prev.filter((id) => id !== termId) : [...prev, termId]
-    );
+  const toggleBookmark = async (termId) => {
+    const isCurrently = bookmarkedIds.includes(termId);
+    const updated = isCurrently
+      ? bookmarkedIds.filter((id) => id !== termId)
+      : [...bookmarkedIds, termId];
+
+    setBookmarkedIds(updated);
+
+    if (currentUser?.id) {
+      localStorage.setItem(`lawsync_bookmarks_${currentUser.id}`, JSON.stringify(updated));
+      const token = localStorage.getItem('lawsync_token');
+      if (token) {
+        try {
+          if (isCurrently) {
+            await api.removeBookmark(termId, token);
+          } else {
+            await api.addBookmark(termId, token);
+          }
+        } catch (e) {
+          console.warn('Failed to sync bookmark to server', e);
+        }
+      }
+    }
   };
 
   const isBookmarked = (termId) => bookmarkedIds.includes(termId);
@@ -185,6 +219,15 @@ export default function App() {
     return Array.from(set);
   }, [terms]);
 
+  // Handle opening term modal and recording view history
+  const handleOpenTermModal = (term) => {
+    setSelectedTermForModal(term);
+    const token = localStorage.getItem('lawsync_token');
+    if (token && term?.id) {
+      api.addHistory(term.id, token).catch(() => {});
+    }
+  };
+
   // Handle clicking on related term tags
   const handleRelatedTermClick = (relTermWord) => {
     setSearchQuery(relTermWord);
@@ -231,6 +274,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         backendStatus={backendStatus}
         termCount={totalTermsCount || terms.length}
+        bookmarkedCount={bookmarkedIds.length}
         currentUser={currentUser}
         onLogout={handleLogout}
       />
@@ -335,7 +379,7 @@ export default function App() {
                   <TermCard
                     key={term.id}
                     term={term}
-                    onSelectTerm={(t) => setSelectedTermForModal(t)}
+                    onSelectTerm={handleOpenTermModal}
                     onRelatedTermClick={handleRelatedTermClick}
                     onCompareWith={handleCompareWith}
                     isBookmarked={isBookmarked(term.id)}
@@ -368,7 +412,7 @@ export default function App() {
               </p>
             </div>
             <TermOfTheDay
-              onSelectTerm={(t) => setSelectedTermForModal(t)}
+              onSelectTerm={handleOpenTermModal}
               onRelatedTermClick={handleRelatedTermClick}
               isBookmarked={isBookmarked}
               onToggleBookmark={toggleBookmark}
@@ -398,6 +442,46 @@ export default function App() {
 
         {/* Tab 5: Legal Quiz */}
         {activeTab === 'quiz' && <QuizView />}
+
+        {/* Tab 6: Saved Bookmarks */}
+        {activeTab === 'bookmarks' && (
+          <div className="bookmarks-view-wrapper">
+            <div className="section-intro">
+              <h2 className="section-heading">Saved Legal Terms</h2>
+              <p className="section-subheading">
+                Your personalized repository of bookmarked statutory doctrines, procedural rules, and jurisprudence definitions.
+              </p>
+            </div>
+            {terms.filter((t) => bookmarkedIds.includes(t.id)).length > 0 ? (
+              <div className="terms-grid">
+                {terms
+                  .filter((t) => bookmarkedIds.includes(t.id))
+                  .map((term) => (
+                    <TermCard
+                      key={term.id}
+                      term={term}
+                      onSelectTerm={handleOpenTermModal}
+                      onRelatedTermClick={handleRelatedTermClick}
+                      onCompareWith={handleCompareWith}
+                      isBookmarked={isBookmarked(term.id)}
+                      onToggleBookmark={toggleBookmark}
+                    />
+                  ))}
+              </div>
+            ) : (
+              <div className="empty-results-box">
+                <Bookmark size={48} className="empty-icon" />
+                <h3 className="empty-title">No bookmarked terms yet</h3>
+                <p className="empty-desc">
+                  Click the bookmark ribbon icon on any legal term card to save it here for quick reference.
+                </p>
+                <button type="button" className="btn-primary" onClick={() => setActiveTab('dictionary')}>
+                  Browse Legal Dictionary
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* Detailed Modal Dialog */}
