@@ -1,0 +1,784 @@
+# Legal Dictionary App — Full Stack Project Documentation
+
+## 1. Project Overview
+
+**Legal Dictionary App** is a full-stack web application that helps users understand legal terms in simple language. Users can search legal terms, view definitions, examples, related laws, save bookmarks, view search history, take quizzes, and compare legal terms.
+
+### Main Goal
+To make legal terminology easier to understand for students, common users, and anyone who wants quick access to legal information.
+
+---
+
+## 2. Objectives
+
+- Provide a searchable legal dictionary.
+- Explain complex legal terms in simple language.
+- Display examples and related laws/sections.
+- Allow users to bookmark important terms.
+- Maintain user search history.
+- Provide quizzes for learning.
+- Compare two legal terms.
+- Support text-to-speech / voice search.
+- Provide secure user authentication.
+- Create an admin-friendly system for managing legal terms.
+
+---
+
+## 3. Major Features
+
+### User Features
+1. User Registration and Login
+2. Search Legal Terms
+3. Browse All Legal Terms
+4. Categories
+5. Term Details
+6. Related Laws and Sections
+7. Examples
+8. Bookmarks
+9. Search History
+10. Legal Quiz
+11. Compare Two Terms
+12. Text-to-Speech
+13. Voice Search
+14. User Profile
+
+### Advanced Features
+- AI-based simple explanations
+- Related-term suggestions
+- Recently searched terms
+- Term of the Day
+- Admin content management
+- Responsive mobile-friendly UI
+
+---
+
+## 4. Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React.js |
+| Styling | Tailwind CSS |
+| Routing | React Router |
+| HTTP Client | Axios |
+| Icons | Lucide React |
+| Backend | Node.js |
+| Server | Express.js |
+| Database | MongoDB |
+| Authentication | JWT + bcrypt |
+| API | REST API |
+| Development | VS Code |
+| Version Control | Git / GitHub |
+| Optional AI | OpenAI API |
+| Optional Voice | Web Speech API |
+
+---
+
+# 5. System Architecture
+
+```text
+                ┌──────────────────────┐
+                │       USER           │
+                │ Browser / Mobile     │
+                └──────────┬───────────┘
+                           │
+                           ▼
+                ┌──────────────────────┐
+                │      FRONTEND        │
+                │ React + Tailwind CSS │
+                │ React Router + Axios │
+                └──────────┬───────────┘
+                           │ REST API
+                           ▼
+                ┌──────────────────────┐
+                │       BACKEND        │
+                │ Node.js + Express.js │
+                │ Auth + Controllers   │
+                └──────────┬───────────┘
+                           │
+                           ▼
+                ┌──────────────────────┐
+                │       DATABASE       │
+                │       MongoDB        │
+                └──────────────────────┘
+
+        Optional External Services
+        ├── AI API
+        ├── Text-to-Speech
+        └── Email Service
+```
+
+---
+
+# 6. Frontend Documentation
+
+## 6.1 Frontend Responsibilities
+
+The frontend is responsible for:
+
+- Displaying the user interface.
+- Searching and displaying legal terms.
+- Sending requests to the backend.
+- Managing login state.
+- Displaying bookmarks and history.
+- Handling quizzes.
+- Providing responsive design.
+
+## 6.2 Frontend Pages
+
+```text
+/
+├── Home
+├── Login
+├── Register
+├── Dictionary
+├── Term Details
+├── Categories
+├── Bookmarks
+├── History
+├── Quiz
+├── Compare
+├── Profile
+└── Admin Dashboard
+```
+
+## 6.3 Important Components
+
+```text
+Navbar
+Footer
+SearchBar
+TermCard
+TermDetails
+CategoryCard
+BookmarkButton
+QuizCard
+CompareBox
+VoiceSearch
+TextToSpeech
+ProtectedRoute
+Loading
+ErrorMessage
+```
+
+## 6.4 Frontend Folder Structure
+
+```text
+frontend/
+├── public/
+├── src/
+│   ├── assets/
+│   ├── components/
+│   ├── pages/
+│   │   ├── Home.jsx
+│   │   ├── Login.jsx
+│   │   ├── Register.jsx
+│   │   ├── Dictionary.jsx
+│   │   ├── TermDetails.jsx
+│   │   ├── Categories.jsx
+│   │   ├── Bookmarks.jsx
+│   │   ├── History.jsx
+│   │   ├── Quiz.jsx
+│   │   ├── Compare.jsx
+│   │   └── Profile.jsx
+│   ├── services/
+│   │   └── api.js
+│   ├── store/
+│   ├── utils/
+│   ├── App.jsx
+│   └── main.jsx
+├── package.json
+└── .env
+```
+
+---
+
+# 7. Backend Documentation
+
+## 7.1 Backend Responsibilities
+
+The backend handles:
+
+- User authentication.
+- Legal term CRUD operations.
+- Search and filtering.
+- Bookmark management.
+- Search history.
+- Quiz data.
+- User profiles.
+- Admin operations.
+- Database communication.
+- API security.
+
+## 7.2 Backend Folder Structure
+
+```text
+backend/
+├── config/
+│   └── db.js
+├── controllers/
+│   ├── authController.js
+│   ├── termController.js
+│   ├── bookmarkController.js
+│   ├── historyController.js
+│   ├── quizController.js
+│   └── userController.js
+├── middleware/
+│   ├── authMiddleware.js
+│   ├── errorMiddleware.js
+│   └── roleMiddleware.js
+├── models/
+│   ├── User.js
+│   ├── Term.js
+│   ├── Bookmark.js
+│   ├── History.js
+│   └── Quiz.js
+├── routes/
+│   ├── authRoutes.js
+│   ├── termRoutes.js
+│   ├── bookmarkRoutes.js
+│   ├── historyRoutes.js
+│   ├── quizRoutes.js
+│   └── userRoutes.js
+├── utils/
+├── server.js
+├── package.json
+└── .env
+```
+
+---
+
+# 8. Database Design
+
+MongoDB is used as the database.
+
+## 8.1 Users Collection
+
+```text
+User
+├── _id
+├── name
+├── email
+├── password
+├── role
+└── createdAt
+```
+
+## 8.2 Terms Collection
+
+```text
+Term
+├── _id
+├── word
+├── definition
+├── simpleMeaning
+├── example
+├── category
+├── relatedLaws
+├── relatedTerms
+└── createdAt
+```
+
+## 8.3 Bookmarks Collection
+
+```text
+Bookmark
+├── _id
+├── userId
+├── termId
+└── createdAt
+```
+
+## 8.4 History Collection
+
+```text
+History
+├── _id
+├── userId
+├── termId
+└── searchedAt
+```
+
+## 8.5 Quiz Collection
+
+```text
+Quiz
+├── _id
+├── question
+├── options
+├── answer
+├── explanation
+└── createdAt
+```
+
+---
+
+# 9. API Documentation
+
+## Authentication
+
+```text
+POST   /api/auth/register
+POST   /api/auth/login
+GET    /api/auth/me
+```
+
+## Legal Terms
+
+```text
+GET    /api/terms
+GET    /api/terms/:id
+POST   /api/terms
+PUT    /api/terms/:id
+DELETE /api/terms/:id
+```
+
+## Bookmarks
+
+```text
+GET    /api/bookmarks
+POST   /api/bookmarks/:termId
+DELETE /api/bookmarks/:termId
+```
+
+## History
+
+```text
+GET    /api/history
+POST   /api/history/:termId
+DELETE /api/history/:termId
+```
+
+## User Profile
+
+```text
+GET    /api/profile
+PUT    /api/profile
+```
+
+## Quiz
+
+```text
+GET    /api/quizzes
+POST   /api/quiz/attempt
+```
+
+---
+
+# 10. Authentication Flow
+
+```text
+User
+ │
+ ├── Register
+ │       │
+ │       ▼
+ │   Backend validates data
+ │       │
+ │       ▼
+ │   Password hashed using bcrypt
+ │       │
+ │       ▼
+ │   User stored in MongoDB
+ │
+ └── Login
+         │
+         ▼
+   Backend verifies password
+         │
+         ▼
+      JWT Token
+         │
+         ▼
+   Frontend stores auth state
+         │
+         ▼
+ Protected API requests
+```
+
+---
+
+# 11. Search Flow
+
+```text
+User enters legal term
+        ↓
+React SearchBar
+        ↓
+Axios API request
+        ↓
+GET /api/terms?search=...
+        ↓
+Express Route
+        ↓
+Term Controller
+        ↓
+MongoDB Search
+        ↓
+Matching Terms
+        ↓
+JSON Response
+        ↓
+React displays Term Cards
+```
+
+---
+
+# 12. Environment Variables
+
+### Backend `.env`
+
+```env
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/legal_dictionary
+JWT_SECRET=your_secret_key
+```
+
+Optional:
+
+```env
+OPENAI_API_KEY=your_api_key
+EMAIL_USER=your_email
+EMAIL_PASS=your_password
+```
+
+### Frontend `.env`
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+Do not upload `.env` files or secret API keys to GitHub.
+
+---
+
+# 13. Installation and Setup
+
+## Prerequisites
+
+Install:
+
+- Node.js
+- npm
+- MongoDB or MongoDB Atlas
+- VS Code
+- Git
+
+## Backend Setup
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+Backend runs on:
+
+```text
+http://localhost:5000
+```
+
+## Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend normally runs on:
+
+```text
+http://localhost:5173
+```
+
+---
+
+# 14. Recommended Packages
+
+## Frontend
+
+```bash
+npm install react-router-dom axios lucide-react
+```
+
+If using Tailwind CSS, install/configure Tailwind according to the current Vite + Tailwind setup.
+
+## Backend
+
+```bash
+npm install express mongoose cors dotenv bcryptjs jsonwebtoken
+npm install multer nodemailer
+npm install -D nodemon
+```
+
+---
+
+# 15. UI Design
+
+## Main Theme
+
+The application can use a professional legal theme:
+
+- Navy / dark blue
+- White
+- Light grey
+- Gold accent
+
+## Home Page
+
+```text
+------------------------------------------------
+              LEGAL DICTIONARY
+       Understand Law. Simply.
+
+        [ Search legal terms... ]
+
+   Popular Terms | Categories | Quiz
+------------------------------------------------
+```
+
+## Term Details Page
+
+```text
+TERM: BAIL
+
+Simple Meaning:
+Temporary release of a person...
+
+Legal Definition:
+...
+
+Example:
+...
+
+Related Laws:
+...
+
+[ 🔊 Listen ] [ ☆ Bookmark ]
+```
+
+---
+
+# 16. Admin Module
+
+Admin users can:
+
+- Add legal terms.
+- Edit legal terms.
+- Delete legal terms.
+- Add categories.
+- Add quiz questions.
+- View users.
+- Manage application content.
+
+Admin routes should be protected using authentication and role-based authorization.
+
+---
+
+# 17. Security
+
+The application should implement:
+
+- Password hashing using bcrypt.
+- JWT authentication.
+- Protected routes.
+- Admin role authorization.
+- Input validation.
+- Secure environment variables.
+- CORS configuration.
+- Error handling.
+- Rate limiting for production.
+- Avoid exposing sensitive database/API credentials.
+
+---
+
+# 18. Testing
+
+### Frontend Testing
+
+Test:
+
+- Navigation
+- Search
+- Login/Register
+- Bookmark button
+- Quiz
+- Responsive layout
+- Error messages
+
+### Backend Testing
+
+Test:
+
+- API status codes
+- Authentication
+- CRUD operations
+- Database queries
+- Invalid requests
+- Unauthorized requests
+
+### Example
+
+```text
+POST /api/auth/login
+Expected:
+200 OK → Login successful
+
+Invalid password:
+401 Unauthorized
+```
+
+---
+
+# 19. Deployment
+
+## Frontend
+
+Possible deployment platforms:
+
+- Vercel
+- Netlify
+
+## Backend
+
+Possible deployment platforms:
+
+- Render
+- Railway
+
+## Database
+
+Use:
+
+- MongoDB Atlas
+
+Production architecture:
+
+```text
+React Frontend
+      ↓
+Hosted Backend API
+      ↓
+MongoDB Atlas
+```
+
+---
+
+# 20. GitHub Structure
+
+```text
+legal-dictionary-app/
+├── frontend/
+├── backend/
+├── README.md
+└── .gitignore
+```
+
+Recommended `.gitignore`:
+
+```text
+node_modules/
+.env
+dist/
+build/
+```
+
+---
+
+# 21. Future Enhancements
+
+1. AI-powered legal term explanations.
+2. Multi-language support.
+3. Tamil + English legal dictionary.
+4. Voice-based legal search.
+5. Personalized learning dashboard.
+6. AI quiz generation.
+7. Advanced legal document search.
+8. Mobile application using React Native.
+9. Notifications for new legal terms.
+10. Admin analytics dashboard.
+
+---
+
+# 22. Project Development Phases
+
+## Phase 1 — Planning
+- Requirements collection
+- UI planning
+- Database planning
+- Architecture design
+
+## Phase 2 — Frontend
+- React setup
+- Pages
+- Components
+- Routing
+- Responsive UI
+
+## Phase 3 — Backend
+- Express setup
+- API routes
+- Controllers
+- Authentication
+- Middleware
+
+## Phase 4 — Database
+- MongoDB setup
+- Models
+- CRUD operations
+- Relationships/references
+
+## Phase 5 — Integration
+- Connect React with API
+- Authentication
+- Search
+- Bookmarks
+- History
+- Quiz
+
+## Phase 6 — Testing
+- UI testing
+- API testing
+- Security testing
+- Bug fixing
+
+## Phase 7 — Deployment
+- Deploy frontend
+- Deploy backend
+- Configure MongoDB Atlas
+- Add production environment variables
+
+---
+
+# 23. Expected Final Project
+
+```text
+             LEGAL DICTIONARY APP
+                     │
+       ┌─────────────┴─────────────┐
+       │                           │
+   FRONTEND                     BACKEND
+   React.js                    Node.js
+   Tailwind CSS                Express.js
+   React Router                REST API
+       │                           │
+       └─────────────┬─────────────┘
+                     │
+                  MongoDB
+                     │
+              Legal Dictionary
+```
+
+The completed project will provide a complete full-stack legal learning platform with a modern frontend, secure backend, database, authentication, search, bookmarks, history, quizzes, and optional AI/voice features.
+
+---
+
+# 24. License
+
+This project can be released under the MIT License.
+
+---
+
+## Conclusion
+
+The Legal Dictionary App combines a **React frontend**, **Node.js/Express backend**, and **MongoDB database** to create a complete full-stack application. The architecture is modular, scalable, and suitable for adding advanced features such as AI explanations, multilingual support, voice search, analytics, and a mobile application in the future.
